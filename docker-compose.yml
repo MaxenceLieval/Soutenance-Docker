@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    networks:
+      - frontend-backend
+    depends_on:
+      backend:
+        condition: service_started
+    restart: always
+
+  backend:
+    build: ./backend
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/soutenance
+      - PORT=5000
+    networks:
+      - frontend-backend
+      - backend-db
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: always
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - backend-db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+networks:
+  frontend-backend:
+    driver: bridge
+  backend-db:
+    driver: bridge
+
+volumes:
+  mongodb_data:
